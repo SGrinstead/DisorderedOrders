@@ -31,16 +31,8 @@ namespace DisorderedOrdersMVC.Controllers
             // create order
             var order = CreateOrderFromCollection(collection);
 
-            // verify stock available
-            VerifyStockAvailable(order);
-
-            // calculate total price
-            var total = CalculateTotalPrice(order);
-
-            // process payment
-            IPaymentProcessor processor = GetPaymentProcessor(paymentType);
-
-            processor.ProcessPayment(total);
+            // checkout process
+            order.Checkout(paymentType);
 
             _context.Orders.Add(order);
             _context.SaveChanges();
@@ -85,46 +77,6 @@ namespace DisorderedOrdersMVC.Controllers
 				}
 			}
             return order;
-		}
-
-        private IPaymentProcessor GetPaymentProcessor(string paymentType)
-        {
-			if (paymentType == "bitcoin")
-			{
-				return new BitcoinProcessor();
-			}
-			else if (paymentType == "paypal")
-			{
-				return new PayPalProcessor();
-			}
-			else
-			{
-				return new CreditCardProcessor();
-			}
-		}
-
-        private int CalculateTotalPrice(Order order)
-        {
-            int total = 0;
-			foreach (var orderItem in order.Items)
-			{
-				var itemPrice = orderItem.Item.Price * orderItem.Quantity;
-				total += itemPrice;
-			}
-            return total;
-		}
-
-        private void VerifyStockAvailable(Order order)
-        {
-			foreach (var orderItem in order.Items)
-			{
-				if (!orderItem.Item.InStock(orderItem.Quantity))
-				{
-					orderItem.Quantity = orderItem.Item.StockQuantity;
-				}
-
-				orderItem.Item.DecreaseStock(orderItem.Quantity);
-			}
 		}
     }
 }
